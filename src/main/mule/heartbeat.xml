@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cb24d6c3-c99d-44dc-927c-719fe4f8d0a8" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<http:listener-config name="Private_HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="8a6f4cf8-80e4-4073-adad-922e5ea1a79f" >
+		<http:listener-connection host="0.0.0.0" port="${http.private.port}" />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="57093975-3d6d-49b7-9702-afc44cf0fb4d" file="properties.yaml" />
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="83259f92-fed5-4cbd-9e14-f2090f176829" objectStore="cache_Object_store"/>
+	<os:object-store name="cache_Object_store" doc:name="Object store" doc:id="b01d8972-04b7-4aaa-b647-ac5ab60acd6a" entryTtl="10" />
+	<flow name="heartbeatFlow-8091" doc:id="a75f5e1c-c943-427b-a442-5e949f791cf9" >
+		<http:listener doc:name="Listener" doc:id="dfa51730-49bd-4c68-8efb-28a4b4c9bbfc" config-ref="Private_HTTP_Listener_config1" path="/heartbeat"/>
+		<flow-ref doc:name="Flow Reference" doc:id="c8539ea9-ef37-450a-be93-42bf3f741dad" name="setMessage" />
+	</flow>
+	<flow name="setMessage" doc:id="3797232d-0666-457d-99b6-b09277efc3fe" >
+		<ee:transform doc:name="Transform Message" doc:id="382cdb7d-d2e1-42b4-b033-f538c4f09bc7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Hello",
+	"Local IP": server.ip,
+	"Local Address": attributes.localAddress,
+	"Remote Address": attributes.remoteAddress,
+	"Time": now() as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b56adeee-ff54-49d2-bef0-4520d94bda9f" message="#[payload]"/>
+	</flow>
+	<flow name="heartbeatFlow-8081" doc:id="eeb6403e-bdb8-40fc-b953-f91945b5cb83" >
+		<http:listener doc:name="Listener" doc:id="f2c92fee-7580-4c08-aa83-b9796d81b5b3" config-ref="HTTP_Listener_config" path="/heartbeat"/>
+		<flow-ref doc:name="Flow Reference" doc:id="3910bb08-77fa-4ac9-9e81-43abc6ec094b" name="setMessage"/>
+	</flow>
+</mule>
